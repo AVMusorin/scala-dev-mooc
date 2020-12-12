@@ -1,7 +1,5 @@
 package module1
 
-import module1.list.List.Cons
-
 import scala.annotation.tailrec
 
 /**
@@ -17,6 +15,7 @@ import scala.annotation.tailrec
    */
 
    sealed trait Option[+A]{
+      import Option._
       def isEmpty: Boolean = this match {
        case Option.Some(_) => false
        case Option.None => true
@@ -26,11 +25,32 @@ import scala.annotation.tailrec
        case Option.Some(v) => v
        case Option.None => throw new Exception("get on empty Option")
       }
+
+    def printIfAny(): Unit = {
+      println(this.get)
+    }
+
+    def orElse[B >: A](other: Option[B]): Option[B] = this match {
+      case None => other
+      case Some(_) => this
+    }
+
+    def zip[B >: A, C](other: Option[B])(f: (A, B) => C): Option[C] = (this, other) match {
+      case (Some(a), Some(b)) => Some(f(a, b))
+      case _ => None
+    }
+
+    def filter(f: A => Boolean): Option[A] = this match {
+      case Some(v) if f(v) => this
+      case _ => None
+    }
    }
 
    object Option {
     case class Some[A](v: A) extends Option[A]
     case object None extends Option[Nothing]
+
+     def empty[A]: Option[A] = None
    }
 
 
@@ -112,13 +132,12 @@ import scala.annotation.tailrec
     */
 
    sealed trait List[+A]{
+     import List._
      def ::[AA >: A](head: AA): List[AA] = Cons(head, this)
 
     def mkString: String = mkString(", ")
 
     def mkString(sep: String): String = {
-       import List._
-
       def loop(l: List[A], acc: StringBuilder): StringBuilder = {
         l match {
          case List.Nil => acc
@@ -127,6 +146,21 @@ import scala.annotation.tailrec
         }
        }
       loop(this, new StringBuilder()).toString()
+     }
+
+     def foldLeft[B](acc: B)(f: (B, A) => B): B = this match {
+       case Nil => acc
+       case Cons(h, t) => t.foldLeft(f(acc, h))(f)
+     }
+
+     def map[B](f: A => B): List[B] = this match {
+       case Nil => Nil
+       case Cons(head, tail) => f(head) :: tail.map(f)
+     }
+
+     def reverse(): List[A] = this match {
+       case Nil => Nil
+       case h :: t => t.foldLeft(List(h))((xs, x) => x :: xs)
      }
    }
 
@@ -140,6 +174,12 @@ import scala.annotation.tailrec
      arg.foreach(el => l = el :: l)
      l
     }
+
+     def empty[A]: List[A] = Nil
+
+     def incList(l: List[Int]): List[Int] = l.map(_ + 1)
+
+     def shoutString(l: List[String]): List[String] = l.map(_ + "!")
    }
 
    val list = 1 :: List.Nil
